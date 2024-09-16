@@ -1,0 +1,18 @@
+[project]
+name = "comic-translation"
+version = "0.0.0"
+authors = [
+    { name="Natalia Trifonova", email="natalia@faircompute.com" },
+]
+description = "A tutorial on how to develop an end-to-end application for translating comics using Fair Compute"
+readme = "README.md"
+requires-python = ">=3.8"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
+
+[project.urls]
+Homepage = "https://faircompute.com"
+Issues = "https://discord.com/invite/JqjZPwrdZe"

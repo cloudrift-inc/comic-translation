@@ -1,0 +1,11 @@
+# Fair Compute - probably not needed, but just in case
+faircompute
+
+# UI
+gradio==4.44.0
+
+# LLM
+ollama-python==0.1.2
+
+# testing
+pytest==7.4.3
