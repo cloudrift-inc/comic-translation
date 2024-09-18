@@ -1,0 +1,9 @@
+# UI
+.idea
+
+# Python
+venv
+*.egg_info
+
+# Gradio
+flagged
