@@ -1,3 +1,4 @@
+import numpy as np
 from paddleocr import PaddleOCR
 from PIL import Image, ImageDraw, ImageFont
 
@@ -32,47 +33,36 @@ class OCRProcessor:
             font = ImageFont.load_default()
         return font
 
-    def perform_ocr(self, image_path):
+    def perform_ocr(self, img):
         """
         Perform OCR on the specified image.
         Returns:
             list: OCR results for the image.
         """
-        try:
-            result = self.ocr_engine.ocr(image_path, cls=True)
-            if result:
-                return result[0]  # Return the result for the single image
-            else:
-                print("No text found in image.")
-                return []
-        except Exception as e:
-            print(f"Error performing OCR on image '{image_path}': {e}")
+        result = self.ocr_engine.ocr(img, cls=True)
+        if result:
+            return result[0]  # Return the result for the single image
+        else:
+            print("No text found in image.")
             return []
 
-    def draw_ocr_results(self, image_path, result, output_path):
+    def draw_ocr_results(self, image, result):
         """
-        Draw OCR results onto the image and save it.
+        Draw OCR results onto the image
 
         """
         if not result:
             print("No OCR results to draw.")
             return
-        try:
-            image = Image.open(image_path).convert('RGB')
-        except Exception as e:
-            print(f"Error loading image '{image_path}': {e}")
-            return
+        if isinstance(image, np.ndarray):
+            image = Image.fromarray(image)
         draw = ImageDraw.Draw(image)
         boxes = [line[0] for line in result]
         txts = [line[1][0] for line in result]
         for box, text in zip(boxes, txts):
             draw.polygon([tuple(point) for point in box], outline="red")
             draw.text((box[0][0], box[0][1]), text, font=self.font, fill="blue")
-        try:
-            image.save(output_path)
-            print(f"OCR results drawn and saved to '{output_path}'.")
-        except Exception as e:
-            print(f"Error saving image '{output_path}': {e}")
+        return image
 
     def show_image(self, image_path):
         try:
@@ -83,11 +73,14 @@ class OCRProcessor:
 
 # Example usage
 if __name__ == "__main__":
-    ocr_processor = OCRProcessor(lang='japan', font_path='data/simfang.ttf')
+    ocr_processor = OCRProcessor(lang='en', font_path='../data/simfang.ttf')
     img_path = '../data/the_werewolf_stalks.jpg'
-    result = ocr_processor.perform_ocr(img_path)
+    image = Image.open(img_path)
+    result = ocr_processor.perform_ocr(np.array(image))
     if result:
         for line in result:
             print(line)
-    ocr_processor.draw_ocr_results(img_path, result, 'result.jpg')
+
+    image = ocr_processor.draw_ocr_results(image, result)
+    image.save('result.jpg')
     ocr_processor.show_image('result.jpg')
