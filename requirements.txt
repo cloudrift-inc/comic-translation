@@ -10,3 +10,6 @@ transformers==4.44.2
 
 # testing
 pytest==7.4.3
+paddleocr>=2.0.1
+
+paddlepaddle

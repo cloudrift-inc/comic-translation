@@ -1,0 +1,9 @@
+README.md
+pyproject.toml
+comic/__init__.py
+comic/hello.py
+comic_translation.egg-info/PKG-INFO
+comic_translation.egg-info/SOURCES.txt
+comic_translation.egg-info/dependency_links.txt
+comic_translation.egg-info/top_level.txt
+test/test_hello.py
