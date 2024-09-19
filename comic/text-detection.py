@@ -84,7 +84,7 @@ class OCRProcessor:
 # Example usage
 if __name__ == "__main__":
     ocr_processor = OCRProcessor(lang='japan', font_path='data/simfang.ttf')
-    img_path = 'file.png'
+    img_path = '../data/the_werewolf_stalks.jpg'
     result = ocr_processor.perform_ocr(img_path)
     if result:
         for line in result:
