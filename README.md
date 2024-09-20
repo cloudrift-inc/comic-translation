@@ -11,6 +11,8 @@
 
 Run `app.py` to start the web application.
 
+To run a test without UI run `comic/translate.py`
+
 ## Testing
 
 Run `pytest` to run tests.

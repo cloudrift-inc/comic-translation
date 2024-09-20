@@ -2,6 +2,8 @@ import csv
 import numpy as np
 from transformers import AutoModelForSeq2SeqLM, AutoTokenizer
 
+from comic import DATA_DIR
+
 
 class TextTranslator:
     TOKEN = "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"
@@ -14,7 +16,7 @@ class TextTranslator:
         self.tgt_lang_code = None
 
     def _load_language_list(self):
-        with open('./data/FLORES-200_code.csv', newline='\n') as csvfile:
+        with open(DATA_DIR / 'FLORES-200_code.csv', newline='\n') as csvfile:
             reader = csv.reader(csvfile, delimiter=',', quotechar='|')
             next(reader)  # skip header
             for row in reader:

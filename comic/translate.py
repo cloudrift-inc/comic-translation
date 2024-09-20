@@ -1,7 +1,9 @@
 import numpy as np
+from PIL import Image
 
-from .text_translator import TextTranslator
-from .text_detector import OCRProcessor
+from comic import DATA_DIR
+from comic.text_translator import TextTranslator
+from comic.text_detector import OCRProcessor
 
 
 class ComicTranslator:
@@ -28,3 +30,10 @@ class ComicTranslator:
         translated_text = self.text_translator.translate_text(text, source_language=source_language, target_language=target_language)
 
         return processed_img, translated_text
+
+
+if __name__ == '__main__':
+    translator = ComicTranslator()
+    img = Image.open(DATA_DIR / 'the_werewolf_stalks.jpg')
+    processed_img, translated_text = translator.translate(np.asarray(img), "English", "Russian")
+    processed_img.save('result.jpg')

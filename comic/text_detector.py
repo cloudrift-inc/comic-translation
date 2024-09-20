@@ -2,6 +2,9 @@ import numpy as np
 from paddleocr import PaddleOCR
 from PIL import Image, ImageDraw, ImageFont
 
+from comic import DATA_DIR
+
+
 class OCRProcessor:
     def __init__(self, lang='en', use_angle_cls=True, font_path=None, font_size=20):
         """
@@ -71,9 +74,10 @@ class OCRProcessor:
         except Exception as e:
             print(f"Error displaying image '{image_path}': {e}")
 
+
 # Example usage
 if __name__ == "__main__":
-    ocr_processor = OCRProcessor(lang='en', font_path='../data/simfang.ttf')
+    ocr_processor = OCRProcessor(lang='en', font_path=DATA_DIR / 'simfang.ttf')
     img_path = '../data/the_werewolf_stalks.jpg'
     image = Image.open(img_path)
     result = ocr_processor.perform_ocr(np.array(image))
