@@ -25,9 +25,10 @@ class ComicTranslator:
             for line in result:
                 text += line[1][0] + "\n"
         processed_img = self.text_detector.draw_ocr_results(img, result)
+        print("Input text:\n", text)
 
-        print(text)
         translated_text = self.text_translator.translate_text(text, source_language=source_language, target_language=target_language)
+        print("Translated text:\n", translated_text)
 
         return processed_img, translated_text
 
