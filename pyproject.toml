@@ -16,3 +16,6 @@ classifiers = [
 [project.urls]
 Homepage = "https://faircompute.com"
 Issues = "https://discord.com/invite/JqjZPwrdZe"
+
+[tool.setuptools]
+packages = ["comic"]

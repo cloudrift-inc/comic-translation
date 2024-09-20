@@ -7,6 +7,12 @@
 3. Install dependencies: `pip install -r requirements.txt`
 4. Install comic library: `pip install -e .`
 
+## Usage
+
+Run `app.py` to start the web application.
+
+To run a test without UI run `comic/translate.py`
+
 ## Testing
 
 Run `pytest` to run tests.
