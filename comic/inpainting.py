@@ -40,7 +40,7 @@ class Inpainter:
         return self.inpaint(image, mask)
 
     def inpaint(self, image, mask):
-        prompt = ""
+        prompt = "no text"
         w = image.width
         h = image.height
         if image.width < 512 or image.height < 512:

@@ -42,7 +42,7 @@ class OCRProcessor:
         Returns:
             list: OCR results for the image.
         """
-        result = self.ocr_engine.ocr(img, cls=True)
+        result = self.ocr_engine.ocr(img, cls=False)
         if result:
             return result[0]  # Return the result for the single image
         else:
@@ -75,9 +75,34 @@ class OCRProcessor:
             print(f"Error displaying image '{image_path}': {e}")
 
 
+    def draw_ocr_results(self, image, result):
+        """
+        Draw OCR results onto the image
+
+        """
+        if not result:
+            print("No OCR results to draw.")
+            return
+        if isinstance(image, np.ndarray):
+            image = Image.new('RGB', (512, 512), (0, 0, 0))
+        draw = ImageDraw.Draw(image)
+        boxes = [line[0] for line in result]
+        #txts = [line[1][0] for line in result]
+        for box in boxes:
+            draw.polygon([tuple(point) for point in box], fill=1)
+            #draw.text((box[0][0], box[0][1]), text, font=self.font, fill="blue")
+        return image
+
+    def show_image(self, image_path):
+        try:
+            image = Image.open(image_path)
+            image.show()
+        except Exception as e:
+            print(f"Error displaying image '{image_path}': {e}")
+
 # Example usage
 if __name__ == "__main__":
-    ocr_processor = OCRProcessor(lang='en', font_path=DATA_DIR / 'simfang.ttf')
+    ocr_processor = OCRProcessor(lang='jp', font_path=DATA_DIR / 'simfang.ttf')
     img_path = '../data/the_werewolf_stalks.jpg'
     image = Image.open(img_path)
     result = ocr_processor.perform_ocr(np.array(image))
