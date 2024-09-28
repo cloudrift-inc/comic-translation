@@ -40,7 +40,7 @@ class Inpainter:
         return self.inpaint(image, mask)
 
     def inpaint(self, image, mask):
-        prompt = "no text"
+        prompt = ""
         w = image.width
         h = image.height
         if image.width < 512 or image.height < 512:
@@ -62,6 +62,7 @@ class Inpainter:
         # Open the image
         d = 256
         out_image = image.copy()
+        i = 0
         for box in bounding_boxes:
             left, upper, right, lower = box
             # Calculate the center coordinates of the bounding box
@@ -77,15 +78,17 @@ class Inpainter:
             # Apply the function to the cropped image and the bounding box
             scaled_box = (left if center_x < d else d - (right - left)/2,
                           upper if center_y < d else d - (lower - upper)/2,
-                          d + (right - left)/2,
-                          d + (lower - upper)/2)
+                          right if center_x < d else d + (right - left)/2,
+                          lower if center_y < d else d + (lower - upper)/2)
 
             filled = self.inpaint_boxes(cropped_img, [scaled_box])
             cropped_img.save("cropped.png")
             filled.save("filled.png")
             print(cropped_img.size)
             print(filled.size)
+            filled.crop(scaled_box).save(f"crop_{i}.png")
             out_image.paste(filled.crop(scaled_box), (int(left), int(upper)))
+            i += 1
         return out_image
 
 

@@ -67,6 +67,20 @@ class OCRProcessor:
             draw.text((box[0][0], box[0][1]), text, font=self.font, fill="blue")
         return image
 
+    def draw_boxes(self, image, boxes):
+        """
+        Draw OCR results onto the image
+
+        """
+        if isinstance(image, np.ndarray):
+            image = Image.fromarray(image)
+        draw = ImageDraw.Draw(image)
+        for box in boxes:
+            x_min, y_min, x_max, y_max = box
+            points = [(x_min, y_min), (x_max, y_min), (x_max, y_max), (x_min, y_max), (x_min, y_min)]
+            draw.polygon(points, outline="red")
+        return image
+
     def show_image(self, image_path):
         try:
             image = Image.open(image_path)
