@@ -1,6 +1,6 @@
 import PIL.Image
 import numpy as np
-from diffusers import AutoPipelineForInpainting, DPMSolverMultistepScheduler
+from diffusers import StableDiffusionXLInpaintPipeline, DPMSolverMultistepScheduler
 import torch
 from argparse import ArgumentParser
 from comic.text_generator import TextGenerator
@@ -12,8 +12,8 @@ from PIL import Image, ImageChops
 class Inpainter:
     def __init__(self):
         repo_id = "diffusers/stable-diffusion-xl-1.0-inpainting-0.1"
-        pipe = AutoPipelineForInpainting.from_pretrained(repo_id, torch_dtype=torch.float16, variant="fp16")
-        pipe.scheduler = DPMSolverMultistepScheduler.from_config(pipe.scheduler.config)
+        pipe = StableDiffusionXLInpaintPipeline.from_pretrained(repo_id, torch_dtype=torch.float16, use_safetensors=True)
+        # pipe.scheduler = DPMSolverMultistepScheduler.from_config(pipe.scheduler.config)
         self.pipe = pipe.to("cuda")
         self.text_generator = TextGenerator()
 
@@ -59,8 +59,9 @@ class Inpainter:
         compose.save(f"img_{boxes[0]}.png")
 
         #plt.imsave(f"compose_{boxes[0]}.png", mask, cmap=cm.gray)
-        #mask = ~mask
-        mask = mask.astype(dtype=np.uint8)
+        mask = mask.astype(np.uint8) * 255
+        mask = Image.fromarray(np.stack([mask, mask, mask], axis=2))
+
         return self.inpaint(image, mask)
 
     def inpaint(self, image, mask):
@@ -68,34 +69,45 @@ class Inpainter:
         print(image.size)
         print(image.mode)
         print(type(mask))
-        print(mask.shape)
-        print(mask.dtype)
+        print(mask.size)
+        print(mask.mode)
+        #
+        # # to floating point
+        # image = np.array(image)
+        # mask = np.array(mask)
+        #
+        # # # check shapes
+        # # assert image.ndim == 3 and image.shape[2] == 3
+        # # assert mask.ndim == 2 and mask.shape == image.shape[:2]
+        #
+        # # pad to target resolution
+        # target_h, target_w = 1024, 1024
+        # h, w = image.shape[:2]
+        # if image.shape[0] < target_h or image.shape[1] < target_w:
+        #     temp_img = np.zeros((target_h, target_w, 3), dtype=np.uint8)
+        #     temp_img[:h, :w, :] = image.astype(np.uint8)
+        #     image = temp_img
+        #     temp_mask = np.zeros((target_h, target_w, 3), dtype=np.uint8)
+        #     temp_mask[:h, :w, :] = mask.astype(np.uint8)
+        #     mask = temp_mask
 
-        # to floating point
-        image = np.array(image)
-        if image.dtype == np.uint8:
-            image = image.astype(np.float32) / 255.0
-        mask = (mask != 0).astype(np.float32)
-
-        # check shapes
-        assert image.ndim == 3 and image.shape[2] == 3
-        assert mask.ndim == 2 and mask.shape == image.shape[:2]
-
-        # pad to 512x512
-        h, w = image.shape[:2]
-        if image.shape[0] < 512 or image.shape[1] < 512:
-            temp_img = np.zeros((512, 512, 3), dtype=np.float32)
-            temp_img[:h, :w, :] = image.astype(np.float32)
-            image = temp_img
-            temp_mask = np.zeros((512, 512), dtype=np.float32)
-            temp_mask[:h, :w] = mask.astype(np.float32)
-            mask = temp_mask
+        # img_url = "https://raw.githubusercontent.com/CompVis/latent-diffusion/main/data/inpainting_examples/overture-creations-5sI6fQgYIuo.png"
+        # mask_url = "https://raw.githubusercontent.com/CompVis/latent-diffusion/main/data/inpainting_examples/overture-creations-5sI6fQgYIuo_mask.png"
+        #
+        # from diffusers.utils import load_image
+        # input_image = load_image(img_url).resize((1024, 1024))
+        # mask_image = load_image(mask_url).resize((1024, 1024))
+        #
+        # mask_image.save('mask_image.png')
+        # mask = mask.resize((1024, 1024))
+        # mask.save('mask.png')
 
         # inpaint
         prompt = ""
-        image = self.pipe(prompt=prompt, image=image, mask_image=mask, num_inference_steps=25).images[0]
+        orig_size = image.size
+        image = self.pipe(prompt=prompt, image=image, mask_image=mask, guidance_scale=8.0, num_inference_steps=20, strength=0.99).images[0]
 
-        return image.crop((0, 0, w, h))
+        return image.resize(orig_size)
 
     def process_image(self, image, bounding_boxes, texts):
         """
@@ -141,6 +153,7 @@ class Inpainter:
 if __name__ == "__main__":
     img_path = "data/manga_no_text.png"
     bbox = [373, 176, 373 + 87, 176 + 111]
+    # bbox = [200, 100, 400, 250]
     text_japanese = "きれーな もんだなあ"
     text_english = "It's beautiful, isn't it?"
 
