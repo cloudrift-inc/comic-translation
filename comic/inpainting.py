@@ -1,6 +1,6 @@
 import PIL.Image
 import numpy as np
-from diffusers import StableDiffusionInpaintPipeline, DPMSolverMultistepScheduler
+from diffusers import AutoPipelineForInpainting, DPMSolverMultistepScheduler
 import torch
 from argparse import ArgumentParser
 from comic.text_generator import TextGenerator
@@ -11,8 +11,8 @@ from PIL import Image, ImageChops
 
 class Inpainter:
     def __init__(self):
-        repo_id = "stabilityai/stable-diffusion-2-inpainting"
-        pipe = StableDiffusionInpaintPipeline.from_pretrained(repo_id, torch_dtype=torch.float16, revision="fp16")
+        repo_id = "diffusers/stable-diffusion-xl-1.0-inpainting-0.1"
+        pipe = AutoPipelineForInpainting.from_pretrained(repo_id, torch_dtype=torch.float16, variant="fp16")
         pipe.scheduler = DPMSolverMultistepScheduler.from_config(pipe.scheduler.config)
         self.pipe = pipe.to("cuda")
         self.text_generator = TextGenerator()
@@ -90,9 +90,6 @@ class Inpainter:
             temp_mask = np.zeros((512, 512), dtype=np.float32)
             temp_mask[:h, :w] = mask.astype(np.float32)
             mask = temp_mask
-
-        # mask to 3 channels
-        mask = np.stack([mask] * 3, axis=2)
 
         # inpaint
         prompt = ""
