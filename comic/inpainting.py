@@ -1,6 +1,6 @@
 import PIL.Image
 import numpy as np
-from diffusers import DiffusionPipeline, DPMSolverMultistepScheduler
+from diffusers import StableDiffusionInpaintPipeline, DPMSolverMultistepScheduler
 import torch
 from argparse import ArgumentParser
 from comic.text_generator import TextGenerator
@@ -12,7 +12,7 @@ from PIL import Image, ImageChops
 class Inpainter:
     def __init__(self):
         repo_id = "stabilityai/stable-diffusion-2-inpainting"
-        pipe = DiffusionPipeline.from_pretrained(repo_id, torch_dtype=torch.float16, revision="fp16")
+        pipe = StableDiffusionInpaintPipeline.from_pretrained(repo_id, torch_dtype=torch.float16, revision="fp16")
         pipe.scheduler = DPMSolverMultistepScheduler.from_config(pipe.scheduler.config)
         self.pipe = pipe.to("cuda")
         self.text_generator = TextGenerator()
@@ -45,14 +45,15 @@ class Inpainter:
         mask = self.boxes_to_mask(image, boxes)
         #mask = PIL.Image.fromarray(mask, mode="1")
         mask = np.asarray(mask)
-        # for box, text in zip(boxes, texts):
-        #     image, m = self.text_generator.generate(image, box, text, fancy=False, generate_mask=True)
-        #
-        #     m = np.asarray(m)
-        #     print(mask.dtype, m.dtype)
-        #     mask = np.logical_xor(mask, m)
+        for box, text in zip(boxes, texts):
+            image, m = self.text_generator.generate(image, box, text, fancy=False, generate_mask=True)
+
+            m = np.asarray(m)
+            print(mask.dtype, m.dtype)
+            mask = np.logical_xor(mask, m)
 
         #mask.save(f"mask_{boxes[0]}.png")
+        Image.fromarray(mask).save(f"mask_{boxes[0]}.png")
         mask_img = Image.fromarray(~mask)
         compose = Image.composite(image, Image.fromarray(np.zeros_like(image)), mask_img)
         compose.save(f"img_{boxes[0]}.png")
@@ -69,15 +70,34 @@ class Inpainter:
         print(type(mask))
         print(mask.shape)
         print(mask.dtype)
-        prompt = ""
-        w = image.width
-        h = image.height
-        if image.width < 512 or image.height < 512:
-            temp_img = Image.new('RGB', (512, 512), (0, 0, 0))
-            temp_img.paste(image, (0, 0))
-            image = temp_img
 
+        # to floating point
+        image = np.array(image)
+        if image.dtype == np.uint8:
+            image = image.astype(np.float32) / 255.0
+        mask = (mask != 0).astype(np.float32)
+
+        # check shapes
+        assert image.ndim == 3 and image.shape[2] == 3
+        assert mask.ndim == 2 and mask.shape == image.shape[:2]
+
+        # pad to 512x512
+        h, w = image.shape[:2]
+        if image.shape[0] < 512 or image.shape[1] < 512:
+            temp_img = np.zeros((512, 512, 3), dtype=np.float32)
+            temp_img[:h, :w, :] = image.astype(np.float32)
+            image = temp_img
+            temp_mask = np.zeros((512, 512), dtype=np.float32)
+            temp_mask[:h, :w] = mask.astype(np.float32)
+            mask = temp_mask
+
+        # mask to 3 channels
+        mask = np.stack([mask] * 3, axis=2)
+
+        # inpaint
+        prompt = ""
         image = self.pipe(prompt=prompt, image=image, mask_image=mask, num_inference_steps=25).images[0]
+
         return image.crop((0, 0, w, h))
 
     def process_image(self, image, bounding_boxes, texts):
@@ -121,16 +141,18 @@ class Inpainter:
         return out_image
 
 
-
-
-
 if __name__ == "__main__":
+    img_path = "data/manga_no_text.png"
+    bbox = [373, 176, 373 + 87, 176 + 111]
+    text_japanese = "きれーな もんだなあ"
+    text_english = "It's beautiful, isn't it?"
+
     parser = ArgumentParser()
     parser.add_argument("-i", "--image")
     parser.add_argument("-b", "--boxes", nargs="*", type=int)
     args = parser.parse_args()
 
     inpainter = Inpainter()
-    image = Image.open(args.image).convert("RGB")
-    out_image = inpainter.process_image(image, [args.boxes])
-    out_image.save("out.png")
+    image = Image.open(img_path).convert("RGB")
+    result = inpainter.inpaint_boxes(image, [bbox], [text_english])
+    result.save("result.png")

@@ -5,6 +5,8 @@ faircompute
 gradio==4.44.0
 
 # ML
+diffusers==0.31.0
+jupyter==1.1.1
 torch==2.4.1
 transformers==4.44.2
 
