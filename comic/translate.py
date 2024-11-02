@@ -3,6 +3,7 @@ from PIL import Image
 
 from comic import DATA_DIR
 from comic.text_translator import TextTranslator
+from comic.translator import Translator
 from comic.text_block_detection import TextBlockDetector
 from comic.text_detector import OCRProcessor
 from comic.inpainting import Inpainter
@@ -14,6 +15,7 @@ class ComicTranslator:
         self.text_detector = OCRProcessor()
         self.detector = TextBlockDetector()
         self.inpainter = Inpainter()
+        self.translator = Translator()
 
     @property
     def available_languages(self):
@@ -36,7 +38,8 @@ class ComicTranslator:
                    max([y for x, y in b])) for b in boxes]
         img = Image.fromarray(img)
         boxes = self.detector.detect(img)
-        clean_image = self.inpainter.process_image(img, boxes)
+        texts = self.translator.translate(img, boxes)
+        clean_image = self.inpainter.process_image(img, boxes, texts)
         processed_img = self.text_detector.draw_boxes(img, boxes)
         print("Input text:\n", text)
 
@@ -49,7 +52,7 @@ class ComicTranslator:
 
 if __name__ == '__main__':
     translator = ComicTranslator()
-    img = Image.open("/home/red-haired/Projects/comic-translation/data/aligned_jap/shokugeki_no_soma/31/2.png")#DATA_DIR / 'the_werewolf_stalks.jpg') #"
+    img = Image.open("/home/red-haired/Projects/comic-translation/data/aligned_jap/shokugeki_no_soma/31/3.png")#DATA_DIR / 'the_werewolf_stalks.jpg') #"
     clean_img, processed_img, translated_text = translator.translate(np.asarray(img), "Japanese", "Russian")
     clean_img.save('clean.jpg')
     processed_img.save('result.jpg')

@@ -29,7 +29,7 @@ def multiline_text(draw, pos, text, box_width, box_height, font, color=0, place=
     justify_last_line = False
     x, y = pos
     if contour > 0:
-        mask = Image.new("L", draw.im.size, 0)
+        mask = Image.new("1", draw.im.size, 0)
         mask_draw = ImageDraw.Draw(mask)
         multiline_text(mask_draw, pos, text, box_width=box_width, box_height=box_height, font=font,
                        color=255, place=place, contour=0, spacing=spacing)
@@ -40,10 +40,10 @@ def multiline_text(draw, pos, text, box_width, box_height, font, color=0, place=
     lines = []
     line = []
     words = text.split()
-    line_spacing = font.getsize(string.ascii_letters)[1] + spacing
+    line_spacing = font.getbbox(string.ascii_letters)[3] + spacing
     for word in words:
         new_line = ' '.join(line + [word])
-        size = font.getsize(new_line)
+        size = font.getbbox(new_line)[2:]
         if size[0] <= box_width:
             line.append(word)
             w = max(w, size[0])
@@ -54,7 +54,7 @@ def multiline_text(draw, pos, text, box_width, box_height, font, color=0, place=
     if line:
         lines.append(line)
         h += line_spacing
-        size = font.getsize(line[0])
+        size = font.getbbox(line[0])[2:]
         w = max(w, size[0])
     lines = [' '.join(line) for line in lines if line]
     height = y + box_height // 2 - h // 2
@@ -64,13 +64,13 @@ def multiline_text(draw, pos, text, box_width, box_height, font, color=0, place=
         if place == 'left':
             write_text(draw, (x, height), line, font=font, color=color)
         elif place == 'right':
-            total_size = font.getsize(line)
+            total_size = font.getbbox(line)[2:]
             x_left = x + box_width - total_size[0]
             if x_left < x_min:
                 x_min = x_left
             write_text(draw, (x_left, height), line, font=font, color=color)
         elif place == 'center':
-            total_size = font.getsize(line)
+            total_size = font.getbbox(line)[2:]
             x_left = int(x + ((box_width - total_size[0]) / 2))
             if x_left < x_min:
                 x_min = x_left
@@ -82,14 +82,14 @@ def multiline_text(draw, pos, text, box_width, box_height, font, color=0, place=
                 write_text(draw, (x, height), line, font=font, color=color)
                 continue
             line_without_spaces = ''.join(words)
-            total_size = font.getsize(line_without_spaces)
+            total_size = font.getbbox(line_without_spaces)[2:]
             space_width = (box_width - total_size[0]) / (len(words) - 1.0)
             start_x = x
             for word in words[:-1]:
                 write_text(draw, (start_x, height), word, font=font, color=color)
-                word_size = font.getsize(word)
+                word_size = font.getbbox(word)[2:]
                 start_x += word_size[0] + space_width
-            last_word_size = font.getsize(words[-1])
+            last_word_size = font.getbbox(words[-1])[2:]
             last_word_x = x + box_width - last_word_size[0]
             write_text(draw, (last_word_x, height), words[-1], font=font, color=color)
         height += line_spacing
@@ -100,19 +100,19 @@ def write_text(draw, pos, text, font, color=0, contour=0, contour_color=255):
     x, y = pos
 
     if contour > 0:
-        mask = Image.new("L", draw.im.size, 0)
+        mask = Image.new("1", draw.im.size, 0)
         mask_draw = ImageDraw.Draw(mask)
         write_text(mask_draw, pos, text, font=font, color=255, contour=0)
         mask = mask.filter(ImageFilter.MaxFilter(contour))
         draw.bitmap((0, 0), mask, contour_color)
 
-    text_size = font.getsize(text)
+    text_size = font.getbbox(text)[2:]
     draw.text((x, y), text, font=font, fill=color)
     return text_size
 
 
 def write_contour(draw, pos, text, font, color=0, contour_color=255):
-    mask = Image.new("L", draw.im.size, 0)
+    mask = Image.new("1", draw.im.size, 0)
     mask_draw = ImageDraw.Draw(mask)
     write_text(mask_draw, pos, text, font, 255)
     mask = mask.filter(ImageFilter.MaxFilter(5))
@@ -142,12 +142,14 @@ class TextGenerator:
     def find_font_size(self, text, box, font_file, spacing):
         box_area = box[2]*box[3]
         font = ImageFont.truetype(str(font_file), size=self.min_font_size)
-        font_size = font.getsize(text)
+        font_size = font.getbbox(text)[2:]
+        print("Font Size:", font_size)
         font_area = font_size[0]*(font_size[1] + spacing + 4)
         multiplier = math.sqrt(box_area*0.4 / font_area)
         return int(self.min_font_size*multiplier)
 
     def generate(self, image, box, text, fancy=False, generate_mask=True, mask=None):
+        box = (box[0], box[1], box[2] - box[0], box[3] - box[1])
         if fancy:
             #font_file = self.rg.choice(self.fancy_fonts)
             spacing = 4
@@ -167,7 +169,7 @@ class TextGenerator:
         if fancy:
             contour = self.rg.choice([1, 2, 3])
         else:
-            contour = 0
+            contour = 5
         if self.rg.random() > 0.5:
             text = text.upper()
         bg_color = get_avg_color_wh(image, (box[0], box[1], box[0] + box[2], box[1] + box[3]))
@@ -181,7 +183,7 @@ class TextGenerator:
         if generate_mask:
             mask_color = 255
             if mask is None:
-                mask = Image.new("L", draw.im.size, 0)
+                mask = Image.new("1", draw.im.size, 0)
             mask_draw = ImageDraw.Draw(mask)
             multiline_text(mask_draw, (x, y), text, box_width, box_height=box[3], font=font, place='center',
                            color=mask_color, contour=contour, contour_color=mask_color, spacing=spacing)
